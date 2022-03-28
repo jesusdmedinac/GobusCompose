@@ -1,4 +1,4 @@
-package com.mupper.gobus.ui.theme
+package com.mupper.gobus.presentation.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
