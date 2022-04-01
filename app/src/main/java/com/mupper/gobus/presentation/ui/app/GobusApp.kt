@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,38 +24,33 @@ fun GobusApp() {
     val navController = rememberNavController()
 
     NavHost(navController, startDestination = "main") {
-        composable("main") { backStackEntry ->
-            PrepareMainScreen()
+        composable("main") {
+            val mapViewModel: MapViewModel = hiltViewModel()
+
+            val state by mapViewModel
+                .container
+                .stateFlow
+                .collectAsState()
+            val sideEffect by mapViewModel
+                .container
+                .sideEffectFlow
+                .collectAsState(initial = MapViewModel.SideEffect.Idle)
+
+            MainScreen(
+                state,
+                sideEffect,
+                navController,
+                mapViewModel::allPermissionGranted,
+                mapViewModel::notAllPermissionGranted,
+                mapViewModel::showStartStopTraveling,
+                mapViewModel::hideStartTravelingDialog,
+                mapViewModel::hideStopTravelingDialog,
+                mapViewModel::startTraveling,
+                mapViewModel::stopTraveling,
+                mapViewModel::retrieveLastKnownLocation,
+                mapViewModel::requestPermissions,
+            )
         }
     }
 
-}
-
-@ExperimentalCoroutinesApi
-@ExperimentalPermissionsApi
-@Composable
-private fun PrepareMainScreen() {
-    val mapViewModel: MapViewModel = hiltViewModel()
-
-    val multiplePermissionState = rememberMultiplePermissionsState(
-        permissions = listOf(
-            Manifest.permission.INTERNET,
-            Manifest.permission.ACCESS_NETWORK_STATE,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-    )
-    if (multiplePermissionState.allPermissionsGranted) mapViewModel.allPermissionGranted()
-    else mapViewModel.notAllPermissionGranted()
-
-    val sideEffect by mapViewModel
-        .container
-        .sideEffectFlow
-        .collectAsState(initial = MapViewModel.SideEffect.Idle)
-    if (sideEffect == MapViewModel.SideEffect.RequestPermissions) {
-        LaunchedEffect(Unit) {
-            multiplePermissionState.launchMultiplePermissionRequest()
-        }
-    }
-
-    MainScreen(mapViewModel)
 }

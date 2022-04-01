@@ -1,4 +1,4 @@
-package com.mupper.gobus.presentation.ui.screens.composables
+package com.mupper.gobus.presentation.ui.composables
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Text
@@ -18,9 +18,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 @ExperimentalPermissionsApi
 @Composable
 fun GoogleMapComposable(
-    mapViewModelState: MapViewModel.State,
+    state: MapViewModel.State,
 ) {
-    val userPosition = mapViewModelState.latLng.toGoogleMapsLatLng()
+    val userPosition = state.latLng.toGoogleMapsLatLng()
+    val isTraveling = state.isTraveling
     val cameraPositionState = CameraPositionState(
         position = CameraPosition.fromLatLngZoom(userPosition, 14f)
     )
@@ -28,7 +29,9 @@ fun GoogleMapComposable(
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState
     ) {
-        Marker(position = userPosition, title = "Position", snippet = "User Position")
+        if (isTraveling) {
+            Marker(position = userPosition, title = "Position", snippet = "User Position")
+        }
     }
 }
 

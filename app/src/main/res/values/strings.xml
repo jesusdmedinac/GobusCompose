@@ -1,3 +1,22 @@
 <resources>
     <string name="app_name">Gobus</string>
+    <string name="title_activity_maps">Gobus</string>
+    <string name="lets_travel_title">¡Vamos a viajar!</string>
+    <string name="lets_travel_message">Para empezar a viajar necesitas comenzar a compartir tu ubicación. ¿Quieres comenzar a viajar?</string>
+    <string name="lets_travel">¡A viajar!</string>
+    <string name="maybe_later">Quizás después</string>
+    <string name="stop_travel_title">¿Ha llegado a su destino?</string>
+    <string name="stop_travel_message">Se dejará de compartir su ubicación</string>
+    <string name="stop">Detener</string>
+    <string name="keep_travel">Seguir viajando</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="add_new_bus_title">Agregar un nuevo Bus</string>
+    <string name="path_name_title">Nombre de la ruta</string>
+    <string name="path_color_title">Color de la ruta</string>
+    <string name="bus_new_capacity">Capacidad del autobus</string>
+    <string name="bus_new_path_color">Color de la ruta</string>
+    <string name="bus_new_path_name">Nombre de la ruta</string>
+    <string name="whats_color_bus_title">¿De qué color es el camión?</string>
 </resources>

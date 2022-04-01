@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 @ExperimentalCoroutinesApi
-class LastKnownLocationRepository @Inject constructor(
+class LocationRepository @Inject constructor(
     private val locationFacade: LocationFacade
 ) {
     fun lastKnownLatLng(): Flow<LatLng> =
