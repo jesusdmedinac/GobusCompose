@@ -58,6 +58,13 @@ class MapViewModel @Inject constructor(
         reduce { state.copy(allPermissionsState = AllPermissionState.NotAllPermissionGranted) }
     }
 
+    fun startTraveling() = intent {
+        reduce {
+            val isTraveling = state.isTraveling
+            state.copy(isTraveling = !isTraveling)
+        }
+    }
+
     sealed class AllPermissionState {
         object Idle : AllPermissionState()
         object AllPermissionGranted : AllPermissionState()
@@ -73,6 +80,7 @@ class MapViewModel @Inject constructor(
     data class State(
         val allPermissionsState: AllPermissionState = AllPermissionState.Idle,
         val latLng: LatLng = LatLng(),
+        val isTraveling: Boolean = false
     )
 
     sealed class SideEffect {

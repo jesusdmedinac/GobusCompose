@@ -37,7 +37,7 @@ fun fusedLocationFlow(
     val locationClient = LocationServices.getFusedLocationProviderClient(context)
     val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
-            result.locations.forEachByIndex { offerCatching(it) }
+            result.locations.forEachByIndex { kotlin.runCatching { it }.getOrDefault(false) }
         }
     }
     locationClient.lastLocation.await<Location?>()?.let { send(it) }

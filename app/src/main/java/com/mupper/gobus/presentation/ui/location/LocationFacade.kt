@@ -24,7 +24,7 @@ class LocationFacade @Inject constructor(
     fun lastCollectionFlow(): Flow<Location> = channelFlow {
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                result.locations.forEachByIndex { offerCatching(it) }
+                result.locations.forEachByIndex { kotlin.runCatching { it }.getOrDefault(false) }
             }
         }
         if (ActivityCompat.checkSelfPermission(
