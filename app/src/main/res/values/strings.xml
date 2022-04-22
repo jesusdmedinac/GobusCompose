@@ -19,4 +19,16 @@
     <string name="bus_new_path_color">Color de la ruta</string>
     <string name="bus_new_path_name">Nombre de la ruta</string>
     <string name="whats_color_bus_title">¿De qué color es el camión?</string>
+    <string name="step_name_path_name">Nombre de la ruta</string>
+    <string name="step_name_path_color">Color de la ruta</string>
+    <string name="step_name_path_capacity">Capacidad del autobus</string>
+    <string name="edit_path_name_placeholder">¿Cómo le llaman a la ruta en donde viajas?</string>
+    <string name="edit_path_color_placeholder">¿Qué color es el transporte que estás tomando?</string>
+    <string name="edit_path_capacity_placeholder">¿Cuántas personas caben sentadas en el transporte en el que viajas?</string>
+    <string name="step_number_path_name">1</string>
+    <string name="step_number_path_color">2</string>
+    <string name="step_number_path_capacity">3</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="button_continue">Continuar</string>
+    <string name="content_description_step_is_done">Step is done content description</string>
 </resources>

@@ -13,12 +13,12 @@ import com.mupper.gobus.R
 @Composable
 fun StartTravelingDialog(
     showDialog: Boolean,
-    startTraveling: () -> Unit,
-    onDismissRequest: () -> Unit
+    showNewTravelDialog: () -> Unit,
+    hideStartTravelingDialog: () -> Unit
 ) {
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = onDismissRequest,
+            onDismissRequest = hideStartTravelingDialog,
             title = {
                 Text(stringResource(R.string.lets_travel_title))
             },
@@ -32,11 +32,11 @@ fun StartTravelingDialog(
                         .padding(8.dp),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismissRequest) {
+                    TextButton(onClick = hideStartTravelingDialog) {
                         Text(stringResource(R.string.maybe_later))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = startTraveling) {
+                    TextButton(onClick = showNewTravelDialog) {
                         Text(stringResource(R.string.lets_travel))
                     }
                 }

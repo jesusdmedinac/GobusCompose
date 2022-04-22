@@ -2,16 +2,23 @@ package com.mupper.gobus.presentation.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.mupper.gobus.data.repository.LocationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.syntax.simple.SimpleSyntax
 import org.orbitmvi.orbit.syntax.simple.intent
 import org.orbitmvi.orbit.syntax.simple.postSideEffect
 import org.orbitmvi.orbit.syntax.simple.reduce
 import org.orbitmvi.orbit.viewmodel.container
+import java.util.*
 import javax.inject.Inject
 
 @ExperimentalCoroutinesApi
@@ -23,23 +30,9 @@ class MapViewModel @Inject constructor(
 ) : ViewModel(),
     ContainerHost<MapViewModel.State, MapViewModel.SideEffect> {
 
+
     override val container: Container<State, SideEffect> =
         container(State())
-
-    fun retrieveLastKnownLocation() = intent {
-        locationRepository
-            .lastKnownLatLng()
-            .collect { latLng ->
-                reduce {
-                    state.copy(
-                        latLng = LatLng(
-                            latitude = latLng.latitude,
-                            longitude = latLng.longitude
-                        )
-                    )
-                }
-            }
-    }
 
     fun requestPermissions() = intent {
         postSideEffect(SideEffect.RequestPermissions)
@@ -53,42 +46,62 @@ class MapViewModel @Inject constructor(
         reduce { state.copy(allPermissionsState = AllPermissionState.NotAllPermissionGranted) }
     }
 
-    fun showStartStopTraveling() = intent {
+    fun showStartTravelingDialog() = intent {
         reduce {
-            if (!state.isTraveling)
-                state.copy(startTravelingIsShown = true)
-            else
-                state.copy(stopTravelingIsShown = true)
+            state.copy(startTravelingDialogIsShown = true)
+        }
+    }
+
+    fun showStopTravelingDialog() = intent {
+        reduce {
+            state.copy(stopTravelingDialogIsShown = true)
         }
     }
 
     fun hideStartTravelingDialog() = intent {
         reduce {
-            state.copy(startTravelingIsShown = false)
+            state.copy(startTravelingDialogIsShown = false)
         }
     }
 
     fun hideStopTravelingDialog() = intent {
         reduce {
-            state.copy(stopTravelingIsShown = true)
+            state.copy(stopTravelingDialogIsShown = true)
         }
     }
 
-    fun startTraveling() = intent {
+    private fun SimpleSyntax<State, SideEffect>.launchCollectLastKnownLocation() =
+        viewModelScope.launch {
+            collectLastKnownLocation(this)
+        }
+
+    private suspend fun SimpleSyntax<State, SideEffect>.collectLastKnownLocation(
+        coroutineScope: CoroutineScope,
+    ) {
+        locationRepository
+            .locationUpdates()
+            .stateIn(coroutineScope)
+            .collect { onNewDomainLatLng(it) }
+    }
+
+    private suspend fun SimpleSyntax<State, SideEffect>.onNewDomainLatLng(
+        latLng: com.mupper.gobus.domain.models.LatLng
+    ) {
         reduce {
-            state.copy(
-                startTravelingIsShown = false,
-                isTraveling = true,
-            )
+            val uiLatLng = latLng.toUILatLng()
+            state.copy(latLng = uiLatLng)
         }
     }
 
-    fun stopTraveling() = intent {
+    private fun com.mupper.gobus.domain.models.LatLng.toUILatLng() = LatLng(
+        latitude = latitude,
+        longitude = longitude
+    )
+
+    fun moveMapCameraToUserLastKnownLocation() = intent {
+        val lastKnownLocation = locationRepository.lastKnownLocation()
         reduce {
-            state.copy(
-                stopTravelingIsShown = false,
-                isTraveling = false,
-            )
+            state.copy(latLng = lastKnownLocation.toUILatLng())
         }
     }
 
@@ -108,8 +121,8 @@ class MapViewModel @Inject constructor(
         val allPermissionsState: AllPermissionState = AllPermissionState.Idle,
         val latLng: LatLng = LatLng(),
         val isTraveling: Boolean = false,
-        val startTravelingIsShown: Boolean = false,
-        val stopTravelingIsShown: Boolean = false,
+        val startTravelingDialogIsShown: Boolean = false,
+        val stopTravelingDialogIsShown: Boolean = false,
     )
 
     sealed class SideEffect {

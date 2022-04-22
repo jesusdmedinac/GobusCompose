@@ -12,6 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -21,10 +22,10 @@ class LocationFacade @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient
 ) {
     @ExperimentalCoroutinesApi
-    fun lastCollectionFlow(): Flow<Location> = channelFlow {
+    fun locationUpdates(): Flow<Location> = channelFlow {
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                result.locations.forEachByIndex { kotlin.runCatching { it }.getOrDefault(false) }
+                result.locations.forEachByIndex { launch { send(it) } }
             }
         }
         if (ActivityCompat.checkSelfPermission(
@@ -32,16 +33,18 @@ class LocationFacade @Inject constructor(
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            fusedLocationProviderClient.lastLocation.await<Location?>()?.let { send(it) }
-            fusedLocationProviderClient.requestLocationUpdates(
-                LocationRequest.create().apply {
-                    interval = 10000
-                    fastestInterval = 5000
-                    priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-                },
-                locationCallback,
-                Looper.getMainLooper()
-            ).await()
+            fusedLocationProviderClient
+                .lastLocation
+                .await<Location>()
+                .let { send(it) }
+            val locationRequest = LocationRequest.create().apply {
+                interval = 6000
+                fastestInterval = 1000
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            }
+            val mainLooper = Looper.getMainLooper()
+            fusedLocationProviderClient
+                .requestLocationUpdates(locationRequest, locationCallback, mainLooper).await()
             awaitClose {
                 fusedLocationProviderClient.removeLocationUpdates(locationCallback)
             }
@@ -64,4 +67,11 @@ class LocationFacade @Inject constructor(
             action(get(i))
         }
     }
+
+    suspend fun lastKnownLocation(): Location? = if (ActivityCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    ) fusedLocationProviderClient.lastLocation.await()
+    else null
 }
