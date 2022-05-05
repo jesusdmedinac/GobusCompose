@@ -30,31 +30,41 @@ class MapViewModel @Inject constructor(
 ) : ViewModel(),
     ContainerHost<MapViewModel.State, MapViewModel.SideEffect> {
 
-
     override val container: Container<State, SideEffect> =
         container(State())
 
-    fun requestPermissions() = intent {
-        postSideEffect(SideEffect.RequestPermissions)
-    }
-
-    fun allPermissionGranted() = intent {
-        reduce { state.copy(allPermissionsState = AllPermissionState.AllPermissionGranted) }
-    }
-
-    fun notAllPermissionGranted() = intent {
-        reduce { state.copy(allPermissionsState = AllPermissionState.NotAllPermissionGranted) }
-    }
-
-    fun showStartTravelingDialog() = intent {
-        reduce {
-            state.copy(startTravelingDialogIsShown = true)
+    val permissionEvents = object : PermissionEvents {
+        override val onAllPermissionGranted = {
+            intent {
+                reduce { state.copy(allPermissionsState = AllPermissionState.AllPermissionGranted) }
+            }
+        }
+        override val onNotAllPermissionGranted = {
+            intent {
+                reduce { state.copy(allPermissionsState = AllPermissionState.NotAllPermissionGranted) }
+            }
+        }
+        override val onPermissionRequested = {
+            intent {
+                postSideEffect(SideEffect.RequestPermissions)
+            }
         }
     }
 
-    fun showStopTravelingDialog() = intent {
-        reduce {
-            state.copy(stopTravelingDialogIsShown = true)
+    val controlDialogEvents = object : ControlDialogEvents {
+        override val showStartTravelingDialog = {
+            intent {
+                reduce {
+                    state.copy(startTravelingDialogIsShown = true)
+                }
+            }
+        }
+        override val showStopTravelingDialog = {
+            intent {
+                reduce {
+                    state.copy(stopTravelingDialogIsShown = true)
+                }
+            }
         }
     }
 
@@ -129,5 +139,16 @@ class MapViewModel @Inject constructor(
         object Idle : SideEffect()
         object RequestPermissions : SideEffect()
         object SetupMap : SideEffect()
+    }
+
+    interface PermissionEvents {
+        val onAllPermissionGranted: () -> Unit
+        val onNotAllPermissionGranted: () -> Unit
+        val onPermissionRequested: () -> Unit
+    }
+
+    interface ControlDialogEvents {
+        val showStartTravelingDialog: () -> Unit
+        val showStopTravelingDialog: () -> Unit
     }
 }

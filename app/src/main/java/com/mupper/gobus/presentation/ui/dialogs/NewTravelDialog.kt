@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -33,12 +33,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 fun NewTravelDialog(
     newTravelViewModelState: TravelViewModel.State,
     hideNewTravelDialog: () -> Unit,
-    onNameValueChange: (String) -> Unit,
-    onColorValueChange: (String) -> Unit,
-    onCapacityValueChange: (String) -> Unit,
-    onStepSelected: (TravelViewModel.StepToCreateNewTravel) -> Unit,
-    onStepValueSaved: (TravelViewModel.StepToCreateNewTravel) -> Unit,
-    onStepValueCanceled: (TravelViewModel.StepToCreateNewTravel) -> Unit,
+    stepsEvents: TravelViewModel.StepsEvents,
     startTraveling: () -> Unit
 ) {
     val dialogIsShown = newTravelViewModelState.newTravelDialogIsShown
@@ -55,13 +50,10 @@ fun NewTravelDialog(
             ) {
                 NewTravelDialogScaffoldContent(
                     newTravelViewModelState,
-                    onStepSelected,
+                    stepsEvents.onStepSelected,
                     selectedStep,
-                    onNameValueChange,
-                    onColorValueChange,
-                    onCapacityValueChange,
-                    onStepValueSaved,
-                    onStepValueCanceled
+                    stepsEvents.onStepValueSaved,
+                    stepsEvents.onStepValueCanceled
                 )
             }
         }
@@ -75,9 +67,6 @@ private fun NewTravelDialogScaffoldContent(
     newTravelViewModelState: TravelViewModel.State,
     onStepSelected: (TravelViewModel.StepToCreateNewTravel) -> Unit,
     selectedStep: TravelViewModel.StepToCreateNewTravel,
-    onNameValueChange: (String) -> Unit,
-    onColorValueChange: (String) -> Unit,
-    onCapacityValueChange: (String) -> Unit,
     onStepValueSaved: (TravelViewModel.StepToCreateNewTravel) -> Unit,
     onStepValueCanceled: (TravelViewModel.StepToCreateNewTravel) -> Unit
 ) {
@@ -87,27 +76,22 @@ private fun NewTravelDialogScaffoldContent(
         NewTravelDialogStepsTabs(newTravelViewModelState, onStepSelected, selectedStep)
 
         val travel = newTravelViewModelState.travel
-        val bus = travel?.bus
-        val pathName = "${bus?.path}"
-        val busColor = "${bus?.color}"
-        val busCapacity = "${bus?.capacity}"
+        val bus = travel.bus
+        val pathName = bus.path
+        val busColor = bus.color
+        val busCapacity = bus.capacity.emptyOrValue()
+
+        var nameTextFieldValue by remember { mutableStateOf(TextFieldValue(pathName)) }
+        var colorTextFieldValue by remember { mutableStateOf(TextFieldValue(busColor)) }
+        var capacityTextFieldValue by remember { mutableStateOf(TextFieldValue(busCapacity)) }
 
         val editPathTextFieldValues = EditPathTextFieldValues(
-            nameTextFieldValue = TextFieldValue(pathName),
-            onNameTextFieldValueChange = { textFieldValue ->
-                val text = textFieldValue.text
-                onNameValueChange(text)
-            },
-            colorTextFieldValue = TextFieldValue(busColor),
-            onColorTextFieldValueChange = { textFieldValue ->
-                val text = textFieldValue.text
-                onColorValueChange(text)
-            },
-            capacityTextFieldValue = TextFieldValue(busCapacity),
-            onCapacityTextFieldValueChange = { textFieldValue ->
-                val text = textFieldValue.text
-                onCapacityValueChange(text)
-            },
+            nameTextFieldValue = nameTextFieldValue,
+            onNameTextFieldValueChange = { nameTextFieldValue = it },
+            colorTextFieldValue = colorTextFieldValue,
+            onColorTextFieldValueChange = { colorTextFieldValue = it },
+            capacityTextFieldValue = capacityTextFieldValue,
+            onCapacityTextFieldValueChange = { capacityTextFieldValue = it },
         )
 
         EditPathStepContent(
@@ -412,17 +396,26 @@ fun EditPathCapacityPreview() {
 @ExperimentalCoroutinesApi
 @ExperimentalPermissionsApi
 @Composable
-private fun TravelViewModel.StepToCreateNewTravel.displayName() = when (this) {
-    is TravelViewModel.StepToCreateNewTravel.Name -> stringResource(R.string.step_name_path_name)
-    is TravelViewModel.StepToCreateNewTravel.Color -> stringResource(R.string.step_name_path_color)
-    is TravelViewModel.StepToCreateNewTravel.Capacity -> stringResource(R.string.step_name_path_capacity)
-}
+private fun TravelViewModel.StepToCreateNewTravel.displayName() = stringResource(
+    when (this) {
+        is TravelViewModel.StepToCreateNewTravel.Name -> R.string.step_name_path_name
+        is TravelViewModel.StepToCreateNewTravel.Color -> R.string.step_name_path_color
+        is TravelViewModel.StepToCreateNewTravel.Capacity -> R.string.step_name_path_capacity
+    }
+)
 
 @ExperimentalCoroutinesApi
 @ExperimentalPermissionsApi
 @Composable
-private fun TravelViewModel.StepToCreateNewTravel.displayNumber() = when (this) {
-    is TravelViewModel.StepToCreateNewTravel.Name -> stringResource(R.string.step_number_path_name)
-    is TravelViewModel.StepToCreateNewTravel.Color -> stringResource(R.string.step_number_path_color)
-    is TravelViewModel.StepToCreateNewTravel.Capacity -> stringResource(R.string.step_number_path_capacity)
+private fun TravelViewModel.StepToCreateNewTravel.displayNumber() = stringResource(
+    when (this) {
+        is TravelViewModel.StepToCreateNewTravel.Name -> R.string.step_number_path_name
+        is TravelViewModel.StepToCreateNewTravel.Color -> R.string.step_number_path_color
+        is TravelViewModel.StepToCreateNewTravel.Capacity -> R.string.step_number_path_capacity
+    }
+)
+
+private fun Int?.emptyOrValue(): String {
+    return if (this == null) ""
+    else "$this"
 }

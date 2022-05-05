@@ -25,8 +25,74 @@ class TravelViewModel : ViewModel(),
                 nameStep = StepToCreateNewTravel.Name(isStepDone = false),
                 colorStep = StepToCreateNewTravel.Color(isStepDone = false),
                 capacityStep = StepToCreateNewTravel.Capacity(isStepDone = false),
+                travel = Travel(
+                    bus = Bus(
+                        path = "",
+                        color = "",
+                    )
+                )
             )
         )
+
+    val stepsEvents = object : StepsEvents {
+        override val onStepSelected = { stepToCreateNewTravel: StepToCreateNewTravel ->
+            intent {
+                reduce {
+                    state.copy(selectedStep = stepToCreateNewTravel)
+                }
+            }
+        }
+        override val onStepValueSaved = { stepToCreateNewTravel: StepToCreateNewTravel ->
+            intent {
+                reduce {
+                    with(stepToCreateNewTravel) {
+                        when (this) {
+                            is StepToCreateNewTravel.Capacity -> state.copy(
+                                capacityStep = copy(
+                                    isStepDone = true
+                                )
+                            )
+                            is StepToCreateNewTravel.Color -> state.copy(
+                                colorStep = copy(
+                                    isStepDone = true
+                                )
+                            )
+                            is StepToCreateNewTravel.Name -> state.copy(
+                                nameStep = copy(
+                                    isStepDone = true
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        override val onStepValueCanceled = { stepToCreateNewTravel: StepToCreateNewTravel ->
+            intent {
+                reduce {
+                    with(stepToCreateNewTravel) {
+                        when (this) {
+                            is StepToCreateNewTravel.Capacity -> state.copy(
+                                capacityStep = copy(
+                                    isStepDone = false
+                                )
+                            )
+                            is StepToCreateNewTravel.Color -> state.copy(
+                                colorStep = copy(
+                                    isStepDone = false
+                                )
+                            )
+                            is StepToCreateNewTravel.Name -> state.copy(
+                                nameStep = copy(
+                                    isStepDone = false
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     fun hideNewTravelDialog() = intent {
         reduce {
@@ -44,72 +110,36 @@ class TravelViewModel : ViewModel(),
         }
     }
 
-    fun onStepSelected(stepToCreateNewTravel: StepToCreateNewTravel) = intent {
-        reduce {
-            state.copy(selectedStep = stepToCreateNewTravel)
-        }
-    }
-
-    fun onStepValueSaved(stepToCreateNewTravel: StepToCreateNewTravel) = intent {
-        reduce {
-            with(stepToCreateNewTravel) {
-                when (this) {
-                    is StepToCreateNewTravel.Capacity -> state.copy(capacityStep = copy(isStepDone = true))
-                    is StepToCreateNewTravel.Color -> state.copy(colorStep = copy(isStepDone = true))
-                    is StepToCreateNewTravel.Name -> state.copy(nameStep = copy(isStepDone = true))
-                }
-            }
-        }
-    }
-
-    fun onStepValueCanceled(stepToCreateNewTravel: StepToCreateNewTravel) = intent {
-        reduce {
-            with(stepToCreateNewTravel) {
-                when (this) {
-                    is StepToCreateNewTravel.Capacity -> state.copy(capacityStep = copy(isStepDone = false))
-                    is StepToCreateNewTravel.Color -> state.copy(colorStep = copy(isStepDone = false))
-                    is StepToCreateNewTravel.Name -> state.copy(nameStep = copy(isStepDone = false))
-                }
-            }
-        }
-    }
-
     sealed class StepToCreateNewTravel(
         open val isStepDone: Boolean,
     ) {
-        data class Name(override val isStepDone: Boolean = false) : StepToCreateNewTravel(isStepDone)
-        data class Color(override val isStepDone: Boolean = false) : StepToCreateNewTravel(isStepDone)
-        data class Capacity(override val isStepDone: Boolean = false) : StepToCreateNewTravel(isStepDone)
+        data class Name(override val isStepDone: Boolean = false) :
+            StepToCreateNewTravel(isStepDone)
+
+        data class Color(override val isStepDone: Boolean = false) :
+            StepToCreateNewTravel(isStepDone)
+
+        data class Capacity(override val isStepDone: Boolean = false) :
+            StepToCreateNewTravel(isStepDone)
     }
 
     data class Bus(
         val path: String,
-        val travelers: List<Travel>,
-        val capacity: Int,
+        val capacity: Int? = null,
         val color: String,
-        val traveling: Boolean,
-    )
-
-    data class Driver(
-        val bus: Bus,
-        val currentPosition: MapViewModel.LatLng,
-        val email: String,
     )
 
     data class Traveler(
-        val currentPosition: MapViewModel.LatLng,
-        val email: String,
-        val traveling: Boolean,
+        val currentPosition: MapViewModel.LatLng? = null,
+        val email: String? = null,
+        val traveling: Boolean? = null,
     )
 
     data class Travel(
-        val id: String,
         val bus: Bus,
-        val driver: Driver?,
-        val traveler: Traveler,
-        val startDate: Date,
-        val endDate: Date,
-        val points: List<MapViewModel.LatLng>
+        val traveler: Traveler? = null,
+        val startDate: Date? = null,
+        val endDate: Date? = null,
     )
 
     data class State(
@@ -118,15 +148,22 @@ class TravelViewModel : ViewModel(),
         val nameStep: StepToCreateNewTravel.Name,
         val colorStep: StepToCreateNewTravel.Color,
         val capacityStep: StepToCreateNewTravel.Capacity,
-        val travel: Travel? = null,
+        val travel: Travel,
     ) {
-        val availableSteps = listOf(nameStep, colorStep, capacityStep)
-        val allStepsAreDone = nameStep.isStepDone
-                && colorStep.isStepDone
-                && capacityStep.isStepDone
+        val availableSteps get() = listOf(nameStep, colorStep, capacityStep)
+        val allStepsAreDone
+            get() = nameStep.isStepDone
+                    && colorStep.isStepDone
+                    && capacityStep.isStepDone
     }
 
     sealed class SideEffect {
         object Idle : SideEffect()
+    }
+
+    interface StepsEvents {
+        val onStepSelected: (TravelViewModel.StepToCreateNewTravel) -> Unit
+        val onStepValueSaved: (TravelViewModel.StepToCreateNewTravel) -> Unit
+        val onStepValueCanceled: (TravelViewModel.StepToCreateNewTravel) -> Unit
     }
 }

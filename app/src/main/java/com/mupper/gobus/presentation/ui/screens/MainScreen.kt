@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -20,23 +22,18 @@ import com.mupper.gobus.presentation.ui.dialogs.StartTravelingDialog
 import com.mupper.gobus.presentation.ui.dialogs.StopTravelingDialog
 import com.mupper.gobus.presentation.viewmodel.MapViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.orbitmvi.orbit.Container
 
 @ExperimentalComposeUiApi
 @ExperimentalCoroutinesApi
 @ExperimentalPermissionsApi
 @Composable
 fun MainScreen(
-    state: MapViewModel.State,
-    sideEffect: MapViewModel.SideEffect,
-    allPermissionGranted: () -> Unit,
-    notAllPermissionGranted: () -> Unit,
-    showStartTravelingDialog: () -> Unit,
-    showStopTravelingDialog: () -> Unit,
-    requestPermissions: () -> Unit,
+    container: Container<MapViewModel.State, MapViewModel.SideEffect>,
+    permissionEvents: MapViewModel.PermissionEvents,
+    controlDialogEvents: MapViewModel.ControlDialogEvents,
     moveMapCameraToUserLastKnownLocation: () -> Unit,
-    startTravelingDialog: @Composable () -> Unit,
-    stopTravelingDialog: @Composable () -> Unit,
-    newTravelDialog: @Composable () -> Unit,
+    mainScreenDialogs: MainScreenDialogs
 ) {
     val multiplePermissionState = rememberMultiplePermissionsState(
         permissions = listOf(
@@ -45,8 +42,11 @@ fun MainScreen(
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
     )
-    if (multiplePermissionState.allPermissionsGranted) allPermissionGranted()
-    else notAllPermissionGranted()
+    if (multiplePermissionState.allPermissionsGranted) permissionEvents.onAllPermissionGranted()
+    else permissionEvents.onNotAllPermissionGranted()
+
+    val state by container.stateFlow.collectAsState()
+    val sideEffect by container.sideEffectFlow.collectAsState(initial = MapViewModel.SideEffect.Idle)
 
     when (sideEffect) {
         MapViewModel.SideEffect.Idle -> {}
@@ -66,8 +66,8 @@ fun MainScreen(
                 MapViewModel.AllPermissionState.AllPermissionGranted -> {
                     FloatingActionButton(
                         onClick = isTraveling.showStartOrStopTravelingDialog(
-                            showStopTravelingDialog,
-                            showStartTravelingDialog
+                            controlDialogEvents.showStopTravelingDialog,
+                            controlDialogEvents.showStartTravelingDialog,
                         )
                     ) {
                         val drawableId = isTraveling.getStartOrStopDrawable()
@@ -88,7 +88,7 @@ fun MainScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     Button(
                         modifier = Modifier.align(Alignment.Center),
-                        onClick = requestPermissions
+                        onClick = permissionEvents.onPermissionRequested
                     ) {
                         Text("Solicitar permisos")
                     }
@@ -96,10 +96,21 @@ fun MainScreen(
             }
         }
 
+        mainScreenDialogs.ComposeDialogs()
+    }
+}
+
+interface MainScreenDialogs {
+    @Composable
+    fun ComposeDialogs() {
         startTravelingDialog()
         stopTravelingDialog()
         newTravelDialog()
     }
+
+    val startTravelingDialog: @Composable () -> Unit
+    val stopTravelingDialog: @Composable () -> Unit
+    val newTravelDialog: @Composable () -> Unit
 }
 
 private fun Boolean.getStartOrStopDrawable() = if (this) R.drawable.ic_stop

@@ -13,6 +13,7 @@ import com.mupper.gobus.presentation.ui.dialogs.NewTravelDialog
 import com.mupper.gobus.presentation.ui.dialogs.StartTravelingDialog
 import com.mupper.gobus.presentation.ui.dialogs.StopTravelingDialog
 import com.mupper.gobus.presentation.ui.screens.MainScreen
+import com.mupper.gobus.presentation.ui.screens.MainScreenDialogs
 import com.mupper.gobus.presentation.viewmodel.MapViewModel
 import com.mupper.gobus.presentation.viewmodel.TravelViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,45 +48,36 @@ fun GobusApp() {
                 .sideEffectFlow
                 .collectAsState(initial = TravelViewModel.SideEffect.Idle)
 
-            val startTravelingDialog = @Composable {
-                StartTravelingDialog(
-                    mapViewModelState.startTravelingDialogIsShown,
-                    travelViewModel::showNewTravelDialog,
-                    mapViewModel::hideStartTravelingDialog,
-                )
-            }
-            val stopTravelingDialog = @Composable {
-                StopTravelingDialog(
-                    mapViewModelState.stopTravelingDialogIsShown,
-                    travelViewModel::stopTraveling,
-                    mapViewModel::hideStopTravelingDialog
-                )
-            }
-            val newTravelDialog = @Composable {
-                NewTravelDialog(
-                    newTravelViewModelState,
-                    travelViewModel::hideNewTravelDialog,
-                    onNameValueChange = {},
-                    onColorValueChange = {},
-                    onCapacityValueChange = {},
-                    travelViewModel::onStepSelected,
-                    travelViewModel::onStepValueSaved,
-                    travelViewModel::onStepValueCanceled,
-                    travelViewModel::startTraveling
-                )
+            val mainScreenDialogs = object : MainScreenDialogs {
+                override val startTravelingDialog = @Composable {
+                    StartTravelingDialog(
+                        mapViewModelState.startTravelingDialogIsShown,
+                        travelViewModel::showNewTravelDialog,
+                        mapViewModel::hideStartTravelingDialog,
+                    )
+                }
+                override val stopTravelingDialog = @Composable {
+                    StopTravelingDialog(
+                        mapViewModelState.stopTravelingDialogIsShown,
+                        travelViewModel::stopTraveling,
+                        mapViewModel::hideStopTravelingDialog
+                    )
+                }
+                override val newTravelDialog = @Composable {
+                    NewTravelDialog(
+                        newTravelViewModelState,
+                        travelViewModel::hideNewTravelDialog,
+                        travelViewModel.stepsEvents,
+                        travelViewModel::startTraveling
+                    )
+                }
             }
             MainScreen(
-                mapViewModelState,
-                mapViewModelSideEffect,
-                mapViewModel::allPermissionGranted,
-                mapViewModel::notAllPermissionGranted,
-                mapViewModel::showStartTravelingDialog,
-                mapViewModel::showStopTravelingDialog,
-                mapViewModel::requestPermissions,
+                mapViewModel.container,
+                mapViewModel.permissionEvents,
+                mapViewModel.controlDialogEvents,
                 mapViewModel::moveMapCameraToUserLastKnownLocation,
-                startTravelingDialog = startTravelingDialog,
-                stopTravelingDialog = stopTravelingDialog,
-                newTravelDialog = newTravelDialog,
+                mainScreenDialogs,
             )
         }
     }
